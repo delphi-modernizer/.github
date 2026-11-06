@@ -27,6 +27,10 @@ on:
         description: Install the Windows App Runtime that Directory.Packages.props pins before testing.
         type: boolean
         default: false
+      submodules:
+        description: Check out submodules of this repository and of the companion ('true', 'recursive' or 'false').
+        type: string
+        default: 'false'
       companion-repository:
         description: An extra repository to check out beside this one, for example delphi-modernizer/engine.
         type: string
@@ -83,6 +87,7 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+          submodules: ${{ inputs.submodules }}
 
       - if: inputs.companion-repository != ''
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -91,6 +96,7 @@ jobs:
           ref: ${{ inputs.companion-ref }}
           path: ${{ inputs.companion-path }}
           persist-credentials: false
+          submodules: ${{ inputs.submodules }}
 
       - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
         with:
