@@ -1,0 +1,10 @@
+namespace Sample;
+
+public sealed class Reader
+{
+    public string Read(string path)
+    {
+        // This used to decode as UTF-8.
+        return path;
+    }
+}

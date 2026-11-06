@@ -1,0 +1,6 @@
+namespace Sample;
+
+// Reads legacy files.
+public sealed class Reader
+{
+}

@@ -1,0 +1,7 @@
+#!/usr/bin/env python3
+"""Validates the kit."""
+
+
+def main() -> int:
+    # The spec is the source of truth; templates follow it.
+    return 0

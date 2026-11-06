@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Prints the kit version.
+set -euo pipefail
+cat VERSION

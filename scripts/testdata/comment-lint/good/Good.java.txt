@@ -1,0 +1,9 @@
+package sample;
+
+/** Reads legacy files with an explicit code page. */
+public final class Reader {
+  public String read(String path) {
+    // Legacy sources carry no BOM, so the configured code page decides.
+    return path;
+  }
+}

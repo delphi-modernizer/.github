@@ -1,0 +1,5 @@
+def main() -> int:
+    # One.
+    # Two.
+    # Three.
+    return 0
