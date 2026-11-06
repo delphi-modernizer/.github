@@ -1,0 +1,27 @@
+name: comment-lint
+
+on:
+  workflow_call:
+    inputs:
+      standards-ref:
+        description: Ref of delphi-modernizer/.github whose comment-lint.sh runs.
+        type: string
+        default: main
+
+permissions:
+  contents: read
+
+jobs:
+  comments:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: delphi-modernizer/.github
+          ref: ${{ inputs.standards-ref }}
+          path: .dm-standards
+          persist-credentials: false
+      - run: bash .dm-standards/scripts/comment-lint.sh .

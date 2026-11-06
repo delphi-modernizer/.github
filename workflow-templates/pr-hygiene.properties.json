@@ -1,0 +1,6 @@
+{
+  "name": "Delphi Modernizer pull-request hygiene",
+  "description": "Conventional Commits title, comment lint and dependency review for any repository.",
+  "iconName": "octicon git-pull-request",
+  "categories": ["Automation"]
+}

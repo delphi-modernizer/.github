@@ -1,0 +1,7 @@
+{
+  "name": "Delphi Modernizer .NET CI",
+  "description": "Comment lint, standards drift, dependency review, then format, build with warnings as errors, test and the vulnerable-package gate.",
+  "iconName": "octicon checklist",
+  "categories": ["C#", ".NET"],
+  "filePatterns": ["global\\.json$", ".*\\.slnx?$"]
+}
