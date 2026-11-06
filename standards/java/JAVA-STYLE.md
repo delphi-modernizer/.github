@@ -50,6 +50,6 @@ These are review items; Checkstyle and SpotBugs catch some of them, not all.
 | Bugs | SpotBugs (`effort=Max`, `threshold=Low`) | build fails on any finding |
 | Tests and coverage | Surefire + JaCoCo | build fails on test failure; coverage reported to Sonar |
 | Sonar rules | SonarQube Cloud (`sonar-maven-plugin`) | quality gate when `SONAR_TOKEN` is set |
-| Vulnerable dependencies | OSV-Scanner on `pom.xml` (transitive), Dependabot, dependency review | any finding fails |
+| Vulnerable dependencies | OSV-Scanner on the CycloneDX SBOM the build writes (`target/bom.json`), Dependabot, dependency review | any finding fails |
 
 The [java-ci](../../.github/workflows/java-ci.yml) reusable workflow runs all of it.

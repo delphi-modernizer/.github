@@ -35,7 +35,7 @@ exists, CI also runs the SonarQube Cloud analysis and its quality gate.
 | Ecosystem | Gate |
 | --- | --- |
 | NuGet | `NuGetAudit=true`, `NuGetAuditMode=all`, `NuGetAuditLevel=low`, with warnings as errors; CI runs `dotnet list package --vulnerable --include-transitive` and fails on any result |
-| Maven | OSV-Scanner on `pom.xml`, transitive dependencies included; any finding fails |
+| Maven | OSV-Scanner on the CycloneDX SBOM of the resolved dependency tree; any finding fails |
 | GitHub Actions | third-party actions pinned by commit SHA with a version comment |
 | Pull requests | `dependency-review` with `fail-on-severity: low` |
 | Continuous | Dependabot version and security updates, CodeQL code scanning |

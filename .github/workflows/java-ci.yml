@@ -46,9 +46,16 @@ jobs:
           java-version: ${{ inputs.java-version }}
           cache: maven
 
-      # The pom binds Spotless check, Checkstyle, SpotBugs, Surefire and JaCoCo to verify.
+      # The pom binds Spotless check, Checkstyle, SpotBugs, Surefire, JaCoCo and the CycloneDX SBOM to verify.
       - name: Verify formatting, style, bugs and tests
         run: mvn -B -ntp verify
+
+      # The SBOM lists the resolved dependency tree, which a scan of pom.xml alone cannot see through BOM imports.
+      - name: Scan the resolved dependencies for known vulnerabilities
+        uses: google/osv-scanner-action/osv-scanner-action@b1d267aea5211fa648d9d442fa64b90dbdcbdd36 # v2.7.0
+        with:
+          scan-args: |-
+            --lockfile=${{ inputs.working-directory }}/target/bom.json
 
       - name: SonarQube Cloud analysis
         if: inputs.sonar-organization != '' && env.SONAR_TOKEN != ''
@@ -61,15 +68,3 @@ jobs:
           -Dsonar.organization="$SONAR_ORGANIZATION"
           -Dsonar.projectKey="$SONAR_PROJECT_KEY"
           -Dsonar.qualitygate.wait=true
-
-  vulnerabilities:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - name: Scan pom.xml and its transitive dependencies
-        uses: google/osv-scanner-action/osv-scanner-action@b1d267aea5211fa648d9d442fa64b90dbdcbdd36 # v2.7.0
-        with:
-          scan-args: |-
-            --lockfile=${{ inputs.working-directory }}/pom.xml
