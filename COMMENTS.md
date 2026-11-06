@@ -71,7 +71,8 @@ var encoding = bom ?? _options.LegacyCodePage;
 ## Enforcement
 
 The `comment-lint` reusable workflow in [delphi-modernizer/.github](https://github.com/delphi-modernizer/.github) runs
-[`scripts/comment-lint.sh`](scripts/comment-lint.sh) on every pull request:
+[`scripts/comment-lint.sh`](https://github.com/delphi-modernizer/.github/blob/main/scripts/comment-lint.sh) on every
+pull request:
 
 - history words in any comment fail;
 - a `//` run directly above a C# or Java declaration fails (it must be `///` or Javadoc);
