@@ -1,0 +1,91 @@
+name: python-ci
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        description: Directory that holds pyproject.toml, uv.lock and .python-version.
+        type: string
+        default: .
+      sources:
+        description: Space-separated paths that pylint checks strictly and bandit scans.
+        type: string
+        required: true
+      tests:
+        description: Space-separated test paths; pytest runs them and pylint checks them with relaxed flags.
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+env:
+  UV_VERSION: '0.13.6'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    env:
+      SOURCES: ${{ inputs.sources }}
+      TESTS: ${{ inputs.tests }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: ${{ env.UV_VERSION }}
+
+      # uv installs the interpreter .python-version names and the locked groups.
+      - name: Install
+        run: uv sync --frozen --all-groups
+
+      - name: Check formatting
+        run: |
+          read -ra sources <<< "$SOURCES"
+          read -ra tests <<< "$TESTS"
+          uv run --frozen isort --check-only "${sources[@]}" "${tests[@]}"
+          uv run --frozen pyink --check "${sources[@]}" "${tests[@]}"
+
+      # Tests are checked as in the reference implementation: their names say what they check and fixtures shadow.
+      - name: Lint
+        run: |
+          read -ra sources <<< "$SOURCES"
+          read -ra tests <<< "$TESTS"
+          uv run --frozen pylint "${sources[@]}"
+          if [ "${#tests[@]}" -gt 0 ]; then
+            uv run --frozen pylint \
+              --disable=missing-docstring,redefined-outer-name \
+              --disable=unused-argument,protected-access,duplicate-code \
+              --disable=too-many-locals,use-implicit-booleaness-not-comparison \
+              --disable=unbalanced-tuple-unpacking \
+              "${tests[@]}"
+          fi
+
+      - name: Check types
+        run: |
+          uv run --frozen mypy
+          uv run --frozen pyright
+
+      - name: Test
+        if: inputs.tests != ''
+        run: |
+          read -ra tests <<< "$TESTS"
+          uv run --frozen pytest "${tests[@]}"
+
+      # GHSA-cg8m-r9f2-5wm2 is in Black's GitHub Action, which nothing here uses; Black comes with pyink.
+      - name: Audit the locked dependencies for known vulnerabilities
+        run: |
+          uv export --frozen --all-groups --no-emit-project --format requirements-txt -q \
+            -o "$RUNNER_TEMP/requirements.txt"
+          uvx --from pip-audit==2.10.1 pip-audit -r "$RUNNER_TEMP/requirements.txt" \
+            --require-hashes --disable-pip --progress-spinner off --ignore-vuln GHSA-cg8m-r9f2-5wm2
+
+      - name: Scan the code for insecure patterns
+        run: |
+          read -ra sources <<< "$SOURCES"
+          uvx --from bandit==1.9.4 bandit -r "${sources[@]}" -q

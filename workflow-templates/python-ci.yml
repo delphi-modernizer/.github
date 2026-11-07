@@ -1,0 +1,32 @@
+name: ci
+
+on:
+  push:
+    branches: [$default-branch, development]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  hygiene:
+    uses: delphi-modernizer/.github/.github/workflows/comment-lint.yml@main
+
+  drift:
+    uses: delphi-modernizer/.github/.github/workflows/standards-drift.yml@main
+    with:
+      files: |
+        docs/COMMENTS.md=COMMENTS.md
+
+  dependencies:
+    uses: delphi-modernizer/.github/.github/workflows/dependency-review.yml@main
+
+  python:
+    uses: delphi-modernizer/.github/.github/workflows/python-ci.yml@main
+    with:
+      sources: src
+      tests: tests
