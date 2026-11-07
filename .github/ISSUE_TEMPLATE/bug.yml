@@ -1,0 +1,30 @@
+name: Bug
+description: Something does the wrong thing
+labels: ["bug"]
+body:
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: "`dmz --version` prints the engine and kit versions; the studio shows them under Settings."
+      placeholder: engine 0.1.0, kit 0.1.0, studio 0.1.0
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: The smallest sequence that shows the problem. Redact anything confidential from the legacy code.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual behaviour
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Output or logs
+      render: text

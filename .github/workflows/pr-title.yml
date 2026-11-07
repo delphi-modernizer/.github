@@ -1,0 +1,28 @@
+name: pr-title
+
+on:
+  workflow_call:
+
+permissions:
+  pull-requests: read
+
+jobs:
+  conventional-commit:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: amannn/action-semantic-pull-request@2252a14e810aa9b85c2d560bd7070c802206ecf6 # v6.1.2
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          types: |
+            feat
+            fix
+            refactor
+            docs
+            test
+            chore
+            ci
+          subjectPattern: ^[a-z].*[^.]$
+          subjectPatternError: >-
+            The subject "{subject}" must start with a lower-case letter and must not end with a full stop.

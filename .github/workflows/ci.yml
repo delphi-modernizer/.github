@@ -1,0 +1,49 @@
+name: ci
+
+on:
+  push:
+    branches: [main, development]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  scripts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Lint the shell scripts
+        run: shellcheck scripts/*.sh
+      - name: Check comment-lint against its fixtures
+        run: bash scripts/test-comment-lint.sh
+      - name: Lint this repository's comments
+        run: bash scripts/comment-lint.sh .
+
+  workflows:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Lint the workflows
+        run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
+      - name: Lint the YAML
+        run: pipx run yamllint==1.38.0 --strict .
+      - name: Parse the workflow template metadata
+        run: for f in workflow-templates/*.properties.json; do python3 -m json.tool "$f" > /dev/null; done
+
+  markdown:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Lint the Markdown
+        run: npx --yes markdownlint-cli2@0.24.0

@@ -1,0 +1,27 @@
+name: Feature request
+description: Something the product should do and does not
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What you are trying to achieve, and what stops you today.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: What you would like to happen. Mention the alternatives you considered.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Methodology (kit)
+        - Scanner, CLI or gates (engine)
+        - Desktop app (studio)
+        - Standards or workflows (.github)
+    validations:
+      required: true

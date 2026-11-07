@@ -1,0 +1,70 @@
+name: java-ci
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        description: Directory that holds pom.xml.
+        type: string
+        default: .
+      java-version:
+        description: Temurin JDK version.
+        type: string
+        default: '21'
+      sonar-organization:
+        description: SonarQube Cloud organization key; the analysis runs only when SONAR_TOKEN is also set.
+        type: string
+        default: ''
+      sonar-project-key:
+        description: SonarQube Cloud project key.
+        type: string
+        default: ''
+    secrets:
+      SONAR_TOKEN:
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+        with:
+          distribution: temurin
+          java-version: ${{ inputs.java-version }}
+          cache: maven
+
+      # The pom binds Spotless check, Checkstyle, SpotBugs, Surefire, JaCoCo and the CycloneDX SBOM to verify.
+      - name: Verify formatting, style, bugs and tests
+        run: mvn -B -ntp verify
+
+      # The SBOM lists the resolved dependency tree, which a scan of pom.xml alone cannot see through BOM imports.
+      - name: Scan the resolved dependencies for known vulnerabilities
+        uses: google/osv-scanner-action/osv-scanner-action@b1d267aea5211fa648d9d442fa64b90dbdcbdd36 # v2.7.0
+        with:
+          scan-args: |-
+            --lockfile=${{ inputs.working-directory }}/target/bom.json
+
+      - name: SonarQube Cloud analysis
+        if: inputs.sonar-organization != '' && env.SONAR_TOKEN != ''
+        env:
+          SONAR_ORGANIZATION: ${{ inputs.sonar-organization }}
+          SONAR_PROJECT_KEY: ${{ inputs.sonar-project-key }}
+        run: >-
+          mvn -B -ntp org.sonarsource.scanner.maven:sonar-maven-plugin:5.8.0.7211:sonar
+          -Dsonar.host.url=https://sonarcloud.io
+          -Dsonar.organization="$SONAR_ORGANIZATION"
+          -Dsonar.projectKey="$SONAR_PROJECT_KEY"
+          -Dsonar.qualitygate.wait=true

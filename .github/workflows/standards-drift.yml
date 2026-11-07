@@ -1,0 +1,38 @@
+name: standards-drift
+
+on:
+  workflow_call:
+    inputs:
+      standards-ref:
+        description: Ref of delphi-modernizer/.github to compare against.
+        type: string
+        default: main
+      files:
+        description: >-
+          One pair per line, local-path=canonical-path, for example
+          ".editorconfig=standards/csharp/.editorconfig".
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: delphi-modernizer/.github
+          ref: ${{ inputs.standards-ref }}
+          path: .dm-standards
+          persist-credentials: false
+      - name: Compare shared files with the canonical copies
+        env:
+          FILES: ${{ inputs.files }}
+        run: |
+          mapfile -t pairs < <(printf '%s\n' "$FILES" | sed '/^[[:space:]]*$/d')
+          bash .dm-standards/scripts/standards-drift.sh .dm-standards "${pairs[@]}"

@@ -1,0 +1,7 @@
+{
+  "name": "Delphi Modernizer Java CI",
+  "description": "Comment lint, standards drift, dependency review, then Spotless, Checkstyle (Google style), SpotBugs, tests and OSV-Scanner.",
+  "iconName": "octicon checklist",
+  "categories": ["Java", "Maven"],
+  "filePatterns": ["pom\\.xml$"]
+}

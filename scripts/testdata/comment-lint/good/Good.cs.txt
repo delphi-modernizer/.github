@@ -1,0 +1,17 @@
+namespace Sample;
+
+/// <summary>The gate identifiers recorded in approvals.json.</summary>
+public enum GateId
+{
+    G0,
+    G1,
+}
+
+public sealed class Reader
+{
+    public string Read(string path)
+    {
+        // Legacy sources carry no BOM, so the configured code page decides.
+        return path;
+    }
+}

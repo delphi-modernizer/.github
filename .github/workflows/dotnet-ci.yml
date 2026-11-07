@@ -1,0 +1,193 @@
+name: dotnet-ci
+
+on:
+  workflow_call:
+    inputs:
+      solution:
+        description: Solution or solution filter to restore, format, build and test, relative to working-directory.
+        type: string
+        required: true
+      working-directory:
+        description: Directory that holds global.json and the solution.
+        type: string
+        default: .
+      os:
+        description: JSON array of runner labels, for example '["ubuntu-latest", "windows-latest"]'.
+        type: string
+        default: '["ubuntu-latest"]'
+      format-exclude:
+        description: Space-separated paths that dotnet format skips.
+        type: string
+        default: ''
+      build-properties:
+        description: Extra MSBuild properties, for example "-p:EngineSource=Source".
+        type: string
+        default: ''
+      windows-app-runtime:
+        description: Install the Windows App Runtime that Directory.Packages.props pins before testing.
+        type: boolean
+        default: false
+      submodules:
+        description: Check out submodules of this repository and of the companion ('true', 'recursive' or 'false').
+        type: string
+        default: 'false'
+      companion-repository:
+        description: An extra repository to check out beside this one, for example delphi-modernizer/engine.
+        type: string
+        default: ''
+      companion-ref:
+        description: The ref of the companion repository.
+        type: string
+        default: ''
+      companion-path:
+        description: Where the companion repository is checked out, relative to the workspace.
+        type: string
+        default: ''
+      artifact-name:
+        description: Upload artifact-path under this name after a green build on the first runner.
+        type: string
+        default: ''
+      artifact-path:
+        description: Paths to upload when artifact-name is set.
+        type: string
+        default: ''
+      sonar-organization:
+        description: SonarQube Cloud organization key; the analysis runs only when SONAR_TOKEN is also set.
+        type: string
+        default: ''
+      sonar-project-key:
+        description: SonarQube Cloud project key.
+        type: string
+        default: ''
+    secrets:
+      SONAR_TOKEN:
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ${{ fromJSON(inputs.os) }}
+    runs-on: ${{ matrix.os }}
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+      DOTNET_NOLOGO: "1"
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      RUN_SONAR: ${{ inputs.sonar-organization != '' && matrix.os == fromJSON(inputs.os)[0] }}
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          submodules: ${{ inputs.submodules }}
+
+      - if: inputs.companion-repository != ''
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ inputs.companion-repository }}
+          ref: ${{ inputs.companion-ref }}
+          path: ${{ inputs.companion-path }}
+          persist-credentials: false
+          submodules: ${{ inputs.submodules }}
+
+      - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+        with:
+          global-json-file: ${{ inputs.working-directory }}/global.json
+
+      - name: Restore
+        env:
+          SOLUTION: ${{ inputs.solution }}
+          BUILD_PROPERTIES: ${{ inputs.build-properties }}
+        run: |
+          read -ra properties <<< "$BUILD_PROPERTIES"
+          dotnet restore "$SOLUTION" "${properties[@]}"
+
+      - name: Verify formatting
+        env:
+          SOLUTION: ${{ inputs.solution }}
+          FORMAT_EXCLUDE: ${{ inputs.format-exclude }}
+        run: |
+          exclude=()
+          if [ -n "$FORMAT_EXCLUDE" ]; then
+            read -ra paths <<< "$FORMAT_EXCLUDE"
+            exclude=(--exclude "${paths[@]}")
+          fi
+          dotnet format "$SOLUTION" --verify-no-changes --severity warn --no-restore "${exclude[@]}"
+
+      # dotnet format leaves a compiler server holding the analyzer assemblies the build rewrites (CS2012).
+      - name: Release the analyzer assemblies
+        run: dotnet build-server shutdown
+
+      - name: Begin the SonarQube Cloud analysis
+        if: env.RUN_SONAR == 'true' && env.SONAR_TOKEN != ''
+        env:
+          SONAR_ORGANIZATION: ${{ inputs.sonar-organization }}
+          SONAR_PROJECT_KEY: ${{ inputs.sonar-project-key }}
+        run: |
+          dotnet tool install --global dotnet-sonarscanner --version 12.1.0
+          dotnet sonarscanner begin \
+            /k:"$SONAR_PROJECT_KEY" /o:"$SONAR_ORGANIZATION" \
+            /d:sonar.host.url=https://sonarcloud.io /d:sonar.token="$SONAR_TOKEN" \
+            /d:sonar.cs.opencover.reportsPaths="TestResults/**/coverage.opencover.xml" \
+            /d:sonar.qualitygate.wait=true
+
+      - name: Build
+        env:
+          SOLUTION: ${{ inputs.solution }}
+          BUILD_PROPERTIES: ${{ inputs.build-properties }}
+        run: |
+          read -ra properties <<< "$BUILD_PROPERTIES"
+          dotnet build "$SOLUTION" -c Release --no-restore "${properties[@]}"
+
+      # Unpackaged WinUI test executables exit before their first test when no matching runtime is installed.
+      - name: Install the Windows App Runtime
+        if: inputs.windows-app-runtime && runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $props = [xml](Get-Content Directory.Packages.props)
+          $version = $props.SelectSingleNode("//PackageVersion[@Include='Microsoft.WindowsAppSDK']").Version
+          $channel = ($version -split '\.')[0..1] -join '.'
+          $installer = Join-Path $env:RUNNER_TEMP 'WindowsAppRuntimeInstall.exe'
+          $uri = "https://aka.ms/windowsappsdk/$channel/$version/windowsappruntimeinstall-x64.exe"
+          Invoke-WebRequest -Uri $uri -OutFile $installer
+          & $installer --quiet
+          if ($LASTEXITCODE -ne 0) { throw "the runtime installer exited $LASTEXITCODE" }
+
+      - name: Test
+        env:
+          SOLUTION: ${{ inputs.solution }}
+          BUILD_PROPERTIES: ${{ inputs.build-properties }}
+        run: |
+          read -ra properties <<< "$BUILD_PROPERTIES"
+          dotnet test "$SOLUTION" -c Release --no-build "${properties[@]}" \
+            --collect "XPlat Code Coverage" --results-directory TestResults \
+            -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+
+      - name: End the SonarQube Cloud analysis
+        if: env.RUN_SONAR == 'true' && env.SONAR_TOKEN != ''
+        run: dotnet sonarscanner end /d:sonar.token="$SONAR_TOKEN"
+
+      - name: Fail on vulnerable packages
+        env:
+          SOLUTION: ${{ inputs.solution }}
+        run: |
+          dotnet list "$SOLUTION" package --vulnerable --include-transitive | tee vulnerable-packages.txt
+          if grep -q 'has the following vulnerable packages' vulnerable-packages.txt; then
+            echo "::error::Vulnerable packages found; see the list above."
+            exit 1
+          fi
+
+      - if: inputs.artifact-name != '' && matrix.os == fromJSON(inputs.os)[0]
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ${{ inputs.artifact-name }}
+          path: ${{ inputs.artifact-path }}
+          if-no-files-found: error
