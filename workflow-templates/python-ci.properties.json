@@ -1,0 +1,7 @@
+{
+  "name": "Delphi Modernizer Python CI",
+  "description": "Comment lint, standards drift, dependency review, then pyink, isort, pylint (Google style), mypy, pyright, pytest, pip-audit and bandit.",
+  "iconName": "octicon checklist",
+  "categories": ["Python"],
+  "filePatterns": ["pyproject\\.toml$"]
+}

@@ -14,7 +14,7 @@ Names, types and small functions carry the meaning. A comment states a fact the 
 | --- | --- | --- |
 | C# | [csharp/csharp-style.md](csharp/csharp-style.md) and [csharp/.editorconfig](csharp/.editorconfig) | `dotnet format --verify-no-changes`, `EnforceCodeStyleInBuild`, KH0001–KH0007, `standards-drift` |
 | Java | [java/JAVA-STYLE.md](java/JAVA-STYLE.md) (Google Java Style) and [java/.editorconfig](java/.editorconfig) | Spotless (google-java-format), Checkstyle `google_checks.xml` |
-| Python | PEP 8, type hints, `ruff` defaults plus `I`, `UP`, `B`, `SIM` | `ruff format --check`, `ruff check` |
+| Python | [python/PYTHON-STYLE.md](python/PYTHON-STYLE.md) (Google Python Style) | pyink, isort, pylint (Google pylintrc), mypy `strict`, pyright, through `python-ci` |
 | Shell | `set -euo pipefail`, quoted expansions | `shellcheck` |
 | PowerShell | `Set-StrictMode -Version Latest`, `$ErrorActionPreference = 'Stop'` | PSScriptAnalyzer |
 | Workflows | pinned actions, least-privilege `permissions` | `actionlint`, review |
@@ -26,9 +26,10 @@ Names, types and small functions carry the meaning. A comment states a fact the 
 ## 3. Zero static-analysis issues
 
 C# builds with `TreatWarningsAsErrors` and `AnalysisLevel=latest`, plus `SonarAnalyzer.CSharp`, so a Sonar, CA, IDE or
-KH issue is a build error. Java builds fail on any Checkstyle or SpotBugs finding. No blanket suppressions: every rule a
-repository disables or downgrades is listed in its `docs/analyzers.md` with the reason. When the `SONAR_TOKEN` secret
-exists, CI also runs the SonarQube Cloud analysis and its quality gate.
+KH issue is a build error. Java builds fail on any Checkstyle or SpotBugs finding, and Python on any pylint, mypy or
+pyright finding. No blanket suppressions: every rule a repository disables or downgrades is listed in its
+`docs/analyzers.md` with the reason, or, for Python, beside the setting in `pyproject.toml`. When the `SONAR_TOKEN`
+secret exists, CI also runs the SonarQube Cloud analysis and its quality gate.
 
 ## 4. Zero known vulnerabilities
 
@@ -36,6 +37,7 @@ exists, CI also runs the SonarQube Cloud analysis and its quality gate.
 | --- | --- |
 | NuGet | `NuGetAudit=true`, `NuGetAuditMode=all`, `NuGetAuditLevel=low`, with warnings as errors; CI runs `dotnet list package --vulnerable --include-transitive` and fails on any result |
 | Maven | OSV-Scanner on the CycloneDX SBOM of the resolved dependency tree; any finding fails |
+| PyPI | `pip-audit` on the hashed export of `uv.lock`, development tools included; any finding fails. `bandit` checks the code |
 | GitHub Actions | third-party actions pinned by commit SHA with a version comment |
 | Pull requests | `dependency-review` with `fail-on-severity: low` |
 | Continuous | Dependabot version and security updates, CodeQL code scanning |
@@ -49,9 +51,9 @@ code that is used once gets no abstraction.
 
 ## 6. Tests
 
-xUnit v3 and NSubstitute for C#; JUnit 5 for Java. MediatR, AutoMapper and FluentAssertions are not used. Behaviour is
-tested through public surfaces; golden files cover parsers and generators. Coverage is collected (coverlet, JaCoCo) and
-reported to Sonar.
+xUnit v3 and NSubstitute for C#; JUnit 5 for Java; pytest for Python, with strict config and markers and warnings as
+errors. MediatR, AutoMapper and FluentAssertions are not used. Behaviour is tested through public surfaces; golden files
+cover parsers and generators. Coverage is collected (coverlet, JaCoCo, coverage.py) and reported to Sonar.
 
 ## 7. Process
 

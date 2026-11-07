@@ -10,7 +10,7 @@ Organization-level files for [Delphi Modernizer](https://github.com/delphi-moder
 | [COMMENTS.md](COMMENTS.md) | The comment convention, copied verbatim into every repository |
 | [standards/](standards/STANDARDS.md) | Engineering standards and the canonical files the drift check compares against |
 | [scripts/](scripts) | `comment-lint.sh` and `standards-drift.sh`, run by the reusable workflows |
-| [.github/workflows](.github/workflows) | Reusable workflows: `comment-lint`, `standards-drift`, `dotnet-ci`, `java-ci`, `dependency-review`, `pr-title` |
+| [.github/workflows](.github/workflows) | Reusable workflows: `comment-lint`, `standards-drift`, `dotnet-ci`, `java-ci`, `python-ci`, `dependency-review`, `pr-title` |
 | [workflow-templates/](workflow-templates) | Starter workflows offered when a repository in the organization adds a workflow |
 | [docs/](docs/ARCHITECTURE.md) | How the repositories fit together, and the organization-wide ADRs |
 
