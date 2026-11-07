@@ -72,5 +72,9 @@ runs `uv sync --frozen`.
 | Lint | `uv run pylint <sources>`; tests and scripts with the reference's relaxed flags | `python-ci` |
 | Types | `uv run mypy` and `uv run pyright` | `python-ci` |
 | Tests | `uv run pytest` with `--strict-config --strict-markers`, `xfail_strict` and warnings as errors | `python-ci` |
-| Known vulnerabilities | `pip-audit` on the hashed `uv export` of every group | `python-ci` |
+| Known vulnerabilities | `pip-audit` on the hashed `uv export` of every group; on pull requests, `dependency-review` too | `python-ci`, `dependency-review` |
 | Insecure code | `bandit`; a finding that is not an issue is marked `# nosec <test>` with the reason | `python-ci` |
+
+Both ignore one advisory, GHSA-cg8m-r9f2-5wm2. It is in Black's GitHub Action, which nothing here uses; Black is
+installed only because pyink pins it. Any other ignored advisory is added the same way, in both workflows, with its
+reason and the owner's agreement.
