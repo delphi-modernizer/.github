@@ -59,6 +59,14 @@ on:
         description: SonarQube Cloud project key.
         type: string
         default: ''
+      sonar-exclusions:
+        description: Comma-separated paths the analysis skips, such as another repository checked out inside this one.
+        type: string
+        default: ''
+      sonar-coverage-exclusions:
+        description: Comma-separated paths still analyzed but left out of coverage, such as UI that another job tests.
+        type: string
+        default: ''
     secrets:
       SONAR_TOKEN:
         required: false
@@ -126,18 +134,29 @@ jobs:
       - name: Release the analyzer assemblies
         run: dotnet build-server shutdown
 
+      # Git Bash on Windows rewrites arguments that start with a slash as paths; /k: and /d: must pass unchanged.
       - name: Begin the SonarQube Cloud analysis
         if: env.RUN_SONAR == 'true' && env.SONAR_TOKEN != ''
         env:
+          MSYS_NO_PATHCONV: "1"
           SONAR_ORGANIZATION: ${{ inputs.sonar-organization }}
           SONAR_PROJECT_KEY: ${{ inputs.sonar-project-key }}
+          SONAR_EXCLUSIONS: ${{ inputs.sonar-exclusions }}
+          SONAR_COVERAGE_EXCLUSIONS: ${{ inputs.sonar-coverage-exclusions }}
         run: |
+          exclusions=()
+          if [ -n "$SONAR_EXCLUSIONS" ]; then
+            exclusions+=(/d:sonar.exclusions="$SONAR_EXCLUSIONS")
+          fi
+          if [ -n "$SONAR_COVERAGE_EXCLUSIONS" ]; then
+            exclusions+=(/d:sonar.coverage.exclusions="$SONAR_COVERAGE_EXCLUSIONS")
+          fi
           dotnet tool install --global dotnet-sonarscanner --version 12.1.0
           dotnet sonarscanner begin \
             /k:"$SONAR_PROJECT_KEY" /o:"$SONAR_ORGANIZATION" \
             /d:sonar.host.url=https://sonarcloud.io /d:sonar.token="$SONAR_TOKEN" \
             /d:sonar.cs.opencover.reportsPaths="TestResults/**/coverage.opencover*.xml" \
-            /d:sonar.qualitygate.wait=true
+            /d:sonar.qualitygate.wait=true "${exclusions[@]}"
 
       - name: Build
         env:
@@ -174,6 +193,8 @@ jobs:
 
       - name: End the SonarQube Cloud analysis
         if: env.RUN_SONAR == 'true' && env.SONAR_TOKEN != ''
+        env:
+          MSYS_NO_PATHCONV: "1"
         run: dotnet sonarscanner end /d:sonar.token="$SONAR_TOKEN"
 
       - name: Fail on vulnerable packages
