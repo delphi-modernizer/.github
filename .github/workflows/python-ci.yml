@@ -40,9 +40,9 @@ jobs:
         with:
           version: ${{ env.UV_VERSION }}
 
-      # uv installs the interpreter .python-version names and the locked groups.
+      # uv installs the interpreter .python-version names and the locked groups, from wheels only.
       - name: Install
-        run: uv sync --frozen --all-groups
+        run: uv sync --frozen --all-groups --no-build
 
       - name: Check formatting
         run: |
