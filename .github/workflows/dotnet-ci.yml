@@ -136,7 +136,7 @@ jobs:
           dotnet sonarscanner begin \
             /k:"$SONAR_PROJECT_KEY" /o:"$SONAR_ORGANIZATION" \
             /d:sonar.host.url=https://sonarcloud.io /d:sonar.token="$SONAR_TOKEN" \
-            /d:sonar.cs.opencover.reportsPaths="TestResults/**/coverage.opencover.xml" \
+            /d:sonar.cs.opencover.reportsPaths="TestResults/**/coverage.opencover*.xml" \
             /d:sonar.qualitygate.wait=true
 
       - name: Build
@@ -161,6 +161,8 @@ jobs:
           & $installer --quiet
           if ($LASTEXITCODE -ne 0) { throw "the runtime installer exited $LASTEXITCODE" }
 
+      # Callers run tests on Microsoft.Testing.Platform: global.json sets test.runner, and each test project
+      # references coverlet.MTP, which writes one coverage.opencover.<stamp>.xml per test module.
       - name: Test
         env:
           SOLUTION: ${{ inputs.solution }}
@@ -168,8 +170,7 @@ jobs:
         run: |
           read -ra properties <<< "$BUILD_PROPERTIES"
           dotnet test "$SOLUTION" -c Release --no-build "${properties[@]}" \
-            --collect "XPlat Code Coverage" --results-directory TestResults \
-            -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+            --results-directory TestResults --coverlet --coverlet-output-format opencover
 
       - name: End the SonarQube Cloud analysis
         if: env.RUN_SONAR == 'true' && env.SONAR_TOKEN != ''
