@@ -21,3 +21,4 @@ supersedes the old one.
 | [0003](0003-markdown-with-ids-is-the-source-of-truth.md) | A workspace is Markdown with IDs in git, not a database |
 | [0004](0004-approvals-are-human-only.md) | Only a person approves a gate, and the approval is bound to a commit |
 | [0005](0005-packages-are-published-to-github-packages.md) | Packages are published to GitHub Packages |
+| [0006](0006-dotnet-tests-run-on-microsoft-testing-platform.md) | .NET tests run on Microsoft.Testing.Platform, with coverlet for coverage |
