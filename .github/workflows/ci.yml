@@ -46,4 +46,6 @@ jobs:
         with:
           persist-credentials: false
       - name: Lint the Markdown
-        run: npx --yes markdownlint-cli2@0.24.0
+        run: |
+          npm install --global --ignore-scripts markdownlint-cli2@0.24.0
+          markdownlint-cli2
