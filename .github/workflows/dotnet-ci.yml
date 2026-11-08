@@ -63,6 +63,10 @@ on:
         description: Comma-separated paths the analysis skips, such as another repository checked out inside this one.
         type: string
         default: ''
+      sonar-coverage-exclusions:
+        description: Comma-separated paths still analyzed but left out of coverage, such as UI that another job tests.
+        type: string
+        default: ''
     secrets:
       SONAR_TOKEN:
         required: false
@@ -138,10 +142,14 @@ jobs:
           SONAR_ORGANIZATION: ${{ inputs.sonar-organization }}
           SONAR_PROJECT_KEY: ${{ inputs.sonar-project-key }}
           SONAR_EXCLUSIONS: ${{ inputs.sonar-exclusions }}
+          SONAR_COVERAGE_EXCLUSIONS: ${{ inputs.sonar-coverage-exclusions }}
         run: |
           exclusions=()
           if [ -n "$SONAR_EXCLUSIONS" ]; then
-            exclusions=(/d:sonar.exclusions="$SONAR_EXCLUSIONS")
+            exclusions+=(/d:sonar.exclusions="$SONAR_EXCLUSIONS")
+          fi
+          if [ -n "$SONAR_COVERAGE_EXCLUSIONS" ]; then
+            exclusions+=(/d:sonar.coverage.exclusions="$SONAR_COVERAGE_EXCLUSIONS")
           fi
           dotnet tool install --global dotnet-sonarscanner --version 12.1.0
           dotnet sonarscanner begin \
