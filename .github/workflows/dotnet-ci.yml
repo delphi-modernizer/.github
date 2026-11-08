@@ -126,9 +126,11 @@ jobs:
       - name: Release the analyzer assemblies
         run: dotnet build-server shutdown
 
+      # Git Bash on Windows rewrites arguments that start with a slash as paths; /k: and /d: must pass unchanged.
       - name: Begin the SonarQube Cloud analysis
         if: env.RUN_SONAR == 'true' && env.SONAR_TOKEN != ''
         env:
+          MSYS_NO_PATHCONV: "1"
           SONAR_ORGANIZATION: ${{ inputs.sonar-organization }}
           SONAR_PROJECT_KEY: ${{ inputs.sonar-project-key }}
         run: |
@@ -174,6 +176,8 @@ jobs:
 
       - name: End the SonarQube Cloud analysis
         if: env.RUN_SONAR == 'true' && env.SONAR_TOKEN != ''
+        env:
+          MSYS_NO_PATHCONV: "1"
         run: dotnet sonarscanner end /d:sonar.token="$SONAR_TOKEN"
 
       - name: Fail on vulnerable packages
